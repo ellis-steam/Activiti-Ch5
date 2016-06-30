@@ -1,15 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
-	targetNamespace="http://www.bpmnwithactiviti.org" xmlns:activiti="http://activiti.org/bpmn">
+<definitions id="taskAssigneeExample"
+  	xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:activiti="http://activiti.org/bpmn"
+	targetNamespace="http://www.activiti.org/bpmn2.0">
 
 	<process id="loanrequest" name="Process to handle a loan request">
 		<startEvent id="theStart" />
-		<sequenceFlow targetRef="theStart" sourceRef="checkCredit" />
-		<scriptTask id="checkCredit" scriptFormat="groovy">
+		<sequenceFlow sourceRef="theStart" targetRef="checkCredit" />
+		<scriptTask id="checkCredit" scriptFormat="groovy" activiti:autoStoreVariables="true">
 			<script>
 				out:println "Checking credit for " + name;
-				creditCheckOk =
-				false;
+				creditCheckOk = false;
 				if((income / 2) > loanAmount) {
 				creditCheckOk = true;
 				}

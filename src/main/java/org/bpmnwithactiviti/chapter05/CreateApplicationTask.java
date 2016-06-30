@@ -11,7 +11,7 @@ public class CreateApplicationTask implements JavaDelegate{
 		la.setCreditCheckOk((Boolean) execution.getVariable("creditCheckOk"));
 		la.setCustomerName((String) execution.getVariable("name"));
 		la.setIncome((Long) execution.getVariable("income"));
-		la.setRequestedAmount((Long) execution.getVariable("laonAmount"));
+		la.setRequestedAmount((Long) execution.getVariable("loanAmount"));
 		la.setEmailAddress((String) execution.getVariable("emailAddress"));
 		execution.setVariable("loanApplication", la);
 	}
