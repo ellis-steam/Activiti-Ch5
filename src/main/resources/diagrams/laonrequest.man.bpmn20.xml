@@ -3,10 +3,33 @@
   	xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
   	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xmlns:activiti="http://activiti.org/bpmn"
-	targetNamespace="http://www.activiti.org/bpmn2.0">
+	targetNamespace="http://www.bpmnwithactiviti.org/loanrequest">
 
 	<process id="loanrequest" name="Process to handle a loan request">
-		<startEvent id="theStart" />
+		<startEvent id="theStart">
+			<extensionElements>
+				<activiti:formProperty 
+					id="name"
+					name="name"
+					required="true"
+					type="string" />
+				<activiti:formProperty 
+					id="emailAddress"
+					name="Email Address"
+					required="true"
+					type="string" />
+				<activiti:formProperty 
+					id="income"
+					name="Income"
+					required="true"
+					type="Long" />
+				<activiti:formProperty 
+					id="loanAmount"
+					name="Loan Amount"
+					required="true"
+					type="Long" />
+			</extensionElements>
+		</startEvent>
 		<sequenceFlow sourceRef="theStart" targetRef="checkCredit" />
 		<scriptTask id="checkCredit" scriptFormat="groovy" activiti:autoStoreVariables="true">
 			<script>
