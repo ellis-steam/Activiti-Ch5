@@ -19,7 +19,7 @@ public class LoanRequestTest {
 	public ActivitiRule activitiRule = new ActivitiRule("activiti.cfg-mem-fullhistory.xml");
 	
 	@Test
-	@Deployment(resources = {"diagrams/laonrequest.man.bpmn20.xml"})
+	@Deployment(resources = {"diagrams/loanrequest.man.bpmn20.xml"})
 	public void creditCheckTrue(){
 		
 		Map<String, Object> processVariables = new HashMap<String, Object>();
