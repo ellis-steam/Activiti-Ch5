@@ -3,60 +3,97 @@
   <process id="loanrequest" name="Process to handle a loan request" isExecutable="true">
     <startEvent id="theStart" >
       <extensionElements>
-        <activiti:formProperty id="name" name="name" type="string" required="true"></activiti:formProperty>
-        <activiti:formProperty id="emailAddress" name="Email Address" type="string" required="true"></activiti:formProperty>
-        <activiti:formProperty id="income" name="Income" type="long" required="true"></activiti:formProperty>
-        <activiti:formProperty id="loanAmount" name="Loan Amount" type="long" required="true"></activiti:formProperty>
+        <activiti:formProperty id="name" name="Name" type="string" required="true" />
+        <activiti:formProperty id="emailAddress" name="Email address" type="string" required="true" />
+        <activiti:formProperty id="income" name="Income" type="long" required="true" />
+        <activiti:formProperty id="loanAmount" name="Loan Amount" type="long" required="true" />
       </extensionElements>
     </startEvent>
-    <sequenceFlow id="sequenceFlow-f7ceccd2-cedf-4f6d-bd3b-8db49a5dc537" sourceRef="theStart" targetRef="checkCredit"></sequenceFlow>
+    <sequenceFlow id="sequenceFlow-f7ceccd2-cedf-4f6d-bd3b-8db49a5dc537" sourceRef="theStart" targetRef="checkCredit" />
     <scriptTask id="checkCredit" scriptFormat="groovy" activiti:autoStoreVariables="true">
       <script>
 				out:println "Checking credit for " + name;
 				creditCheckOk = false;
-				if((income / 2) &gt; loanAmount) {
+				if((income / 2) > loanAmount) {
 				creditCheckOk = true;
 				}
-				//out:println "Checked credit for " + name + " outcome is " + creditCheckOk;
+				out:println "Checked credit for " + name + " outcome is " + creditCheckOk;
 			</script>
     </scriptTask>
-    <sequenceFlow id="sequenceFlow-4922d6f8-aa64-49d3-95ff-e97906e47d65" sourceRef="checkCredit" targetRef="createApplication"></sequenceFlow>
-    <serviceTask id="createApplication" activiti:class="org.bpmnwithactiviti.chapter05.CreateApplicationTask"></serviceTask>
-    <sequenceFlow id="sequenceFlow-eb92869c-2e17-4ee6-b87c-55421f46e48f" sourceRef="createApplication" targetRef="theEnd"></sequenceFlow>
-    <endEvent id="theEnd"></endEvent>
+    <sequenceFlow id="sequenceFlow-4922d6f8-aa64-49d3-95ff-e97906e47d65" sourceRef="checkCredit" targetRef="createApplication" />
+    <serviceTask id="createApplication" activiti:class="org.bpmnwithactiviti.chapter05.CreateApplicationTask" />
+    <sequenceFlow id="sequenceFlow-eb92869c-2e17-4ee6-b87c-55421f46e48f" sourceRef="createApplication" targetRef="evaluateLoanRequest" />
+    <userTask id="evaluateLoanRequest" name="Evaluate loan request" activiti:assignee="fozzie">
+	    <extensionElements>
+	    	<activiti:formProperty id="customerName" name="Customer name" expression="${loanApplication.customerName}" writable="false"/>
+	    	<activiti:formProperty id="income" name="Income of customer" expression="${loanApplication.income}" writable="false"/>
+	    	<activiti:formProperty id="requestedAmount" name="Requested loan amount" expression="${loanApplication.requestedAmount}" writable="false"/>
+	    	<activiti:formProperty id="creditCheckOk" name="Outcome of credit check" expression="${loanApplication.creditCheckOk}" writable="false"/>
+	    	<activiti:formProperty id="requestApproved" name="Do you approve the request?" required="true" type="enum">
+	    		<activiti:value id="true" name="Yes" />
+	    		<activiti:value id="false" name="No" />
+	    	</activiti:formProperty>
+	    	<activiti:formProperty id="explanation" name="Explanation"/>
+	    </extensionElements>
+    </userTask>
+    <sequenceFlow sourceRef="evaluateLoanRequest" targetRef="approvalGateway" />
+    <boundaryEvent id="escalationTimer" cancelActivity="true" attachedToRef="evaluateLoanRequest">
+    	<timerEventDefinition>
+    		<timeDuration>PT1M</timeDuration>
+    	</timerEventDefinition>
+    </boundaryEvent>
+    <sequenceFlow sourceRef="escalationTimer" targetRef="evaluateRequestByManager" />
+    <userTask id="evaluateRequestByManager" name="Loan evaluation by manager" activiti:candidateGroups="management" >
+    	<extensionElements>
+	        <activiti:formProperty id="customerName" name="Customer name" expression="${loanApplication.customerName}" writable="false"/>
+	        <activiti:formProperty id="income" name="Income of customer" expression="${loanApplication.income}" writable="false"/>
+	        <activiti:formProperty id="requestedAmount" name="Requested loan amount" expression="${loanApplication.requestedAmount}" writable="false"/>
+	        <activiti:formProperty id="creditCheckOk" name="Outcome of credit check" expression="${loanApplication.creditCheckOk}" writable="false"/>
+	        <activiti:formProperty id="requestApproved" name="Do you approve the request?" required="true" type="enum">
+	          <activiti:value id="true" name="Yes"/>
+	          <activiti:value id="false" name="No"/>
+	        </activiti:formProperty>
+	        <activiti:formProperty id="explanation" name="Explanation"/>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow sourceRef="evaluateRequestByManager" targetRef="approvalGateway" />
+    <exclusiveGateway id="approvalGateway" />
+    <sequenceFlow sourceRef="approvalGateway" targetRef="informCustomer">
+    	<conditionExpression xsi:type="tFormalExpression">
+    		${requestApproved == false}
+    	</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow sourceRef="approvalGateway"  targetRef="processRequest">
+    	<conditionExpression xsi:type="tFormalExpression">
+    		${requestApproved == true}
+    	</conditionExpression>
+    </sequenceFlow>
+    <serviceTask id="informCustomer" activiti:type="mail">
+    	<extensionElements>
+    		<activiti:field name="to" expression="${loanApplication.emailAddress}" />
+    		<activiti:field name="subject" stringValue="Loan Request Denied" />
+    		<activiti:field name="html">
+    			<activiti:expression>
+    				<![CDATA[
+	    				<html>
+	    					<body>
+	    						Hello ${loanApplication.customerName},<br/><br/>
+	    						
+	    						Your loan request has been denied for the following reason: ${explanation}.<br/><br/>
+	    						
+	    						Kind regards,<br/>
+	    						
+	    						The Loan Sharks Company.
+	    					</body>
+	    				</html>
+    				]]>
+    			</activiti:expression>
+    		</activiti:field>
+    	</extensionElements>
+    </serviceTask>
+    <sequenceFlow sourceRef="informCustomer" targetRef="theEnd" />
+    <userTask id="processRequest" name="Process the loan request" activiti:assignee="fozzie" />
+    <sequenceFlow sourceRef="processRequest" targetRef="theEnd" />
+    <endEvent id="theEnd" />
   </process>
-  <bpmndi:BPMNDiagram id="BPMNDiagram_loanrequest">
-    <bpmndi:BPMNPlane bpmnElement="loanrequest" id="BPMNPlane_loanrequest">
-      <bpmndi:BPMNShape bpmnElement="theStart" id="BPMNShape_theStart">
-        <omgdc:Bounds height="35.0" width="35.0" x="0.0" y="15.0"></omgdc:Bounds>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape bpmnElement="checkCredit" id="BPMNShape_checkCredit">
-        <omgdc:Bounds height="60.0" width="100.0" x="80.0" y="0.0"></omgdc:Bounds>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape bpmnElement="createApplication" id="BPMNShape_createApplication">
-        <omgdc:Bounds height="60.0" width="100.0" x="230.0" y="0.0"></omgdc:Bounds>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape bpmnElement="theEnd" id="BPMNShape_theEnd">
-        <omgdc:Bounds height="35.0" width="35.0" x="380.0" y="15.0"></omgdc:Bounds>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge bpmnElement="sequenceFlow-f7ceccd2-cedf-4f6d-bd3b-8db49a5dc537" id="BPMNEdge_sequenceFlow-f7ceccd2-cedf-4f6d-bd3b-8db49a5dc537">
-        <omgdi:waypoint x="35.0" y="32.0"></omgdi:waypoint>
-        <omgdi:waypoint x="42.0" y="30.0"></omgdi:waypoint>
-        <omgdi:waypoint x="42.0" y="30.0"></omgdi:waypoint>
-        <omgdi:waypoint x="80.0" y="30.0"></omgdi:waypoint>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge bpmnElement="sequenceFlow-4922d6f8-aa64-49d3-95ff-e97906e47d65" id="BPMNEdge_sequenceFlow-4922d6f8-aa64-49d3-95ff-e97906e47d65">
-        <omgdi:waypoint x="180.0" y="30.0"></omgdi:waypoint>
-        <omgdi:waypoint x="192.0" y="30.0"></omgdi:waypoint>
-        <omgdi:waypoint x="192.0" y="30.0"></omgdi:waypoint>
-        <omgdi:waypoint x="230.0" y="30.0"></omgdi:waypoint>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge bpmnElement="sequenceFlow-eb92869c-2e17-4ee6-b87c-55421f46e48f" id="BPMNEdge_sequenceFlow-eb92869c-2e17-4ee6-b87c-55421f46e48f">
-        <omgdi:waypoint x="330.0" y="30.0"></omgdi:waypoint>
-        <omgdi:waypoint x="342.0" y="30.0"></omgdi:waypoint>
-        <omgdi:waypoint x="342.0" y="30.0"></omgdi:waypoint>
-        <omgdi:waypoint x="380.0" y="32.0"></omgdi:waypoint>
-      </bpmndi:BPMNEdge>
-    </bpmndi:BPMNPlane>
-  </bpmndi:BPMNDiagram>
 </definitions>

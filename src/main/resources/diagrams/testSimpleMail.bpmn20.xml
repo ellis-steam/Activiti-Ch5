@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" 
+				xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+				xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
+				xmlns:activiti="http://activiti.org/bpmn" 
+				xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" 
+				xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" 
+				xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" 
+				typeLanguage="http://www.w3.org/2001/XMLSchema" 
+				expressionLanguage="http://www.w3.org/1999/XPath" 
+				targetNamespace="http://www.bpmnwithactiviti.org/loanrequest" id="taskAssigneeExample">
+
+<process id="simpleEmailProcess">
+	<startEvent id="theStart" />
+	<sequenceFlow sourceRef="theStart" targetRef="sendMail" />
+	<serviceTask id="sendMail" activiti:type="mail" >
+		<extensionElements>
+			<activiti:field name="to" stringValue="miss.piggy@localhost" />
+			<!-- <activiti:field name="to" expression="${loanApplication.emailAddress}" /> -->
+			<activiti:field name="subject" expression="Hello ${name}" />
+			<activiti:field name="html">
+				<activiti:expression>
+					<![CDATA[
+					<html>
+					<body>
+						Hello ${name}, </br></br>
+						Your loan request has been denied.</br></br>
+						Kind regards,</br>
+						Loan Sharks
+					</body>
+					</html>
+					]]>
+				</activiti:expression>
+			</activiti:field>
+		</extensionElements>
+	</serviceTask>
+	<sequenceFlow sourceRef="sendMail" targetRef="theEnd" />
+	<endEvent id="theEnd"/>
+</process>
+				
+</definitions>
